@@ -1,0 +1,212 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1251">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<script src="embed_data/vuemix.js" charset="utf-8"></script>
+<script src="embed_data/1XBsLZpj.js"></script>
+
+<script>
+var sw;
+var vx = { tout:240000, market:"www.chicagotribune.com", playlist:"AllV", ai:1, q:"" };
+
+function active() {
+   sw.unfreeze();
+   if (vx.tid) { window.clearTimeout(vx.tid); }
+   vx.tid = window.setTimeout(function() { sw.freeze(); vx.pi=null; console.log("frz"); },vx.tout);
+}
+
+function onTap(wall, ct, tag, idx) {
+   if (vx.pi == idx) { onDoubleTap(wall, ct, tag, idx); return; }
+   vx.pi = idx;
+   wall.setEmphasis(idx);
+   active();
+}
+
+function onDoubleTap(wall, ct, tag, index) {
+   var target = ct.webPageURL;
+   if (vx.market) {
+     var s = ct.webPageURL.split("/");
+     s[2] = vx.market;
+     target = s.join("/");
+   }
+   target = target + "#nt=vuemix";
+   top.location = target;
+}
+
+function onPageChange(wall, pgi, npg) {
+  var $p = $("#my_wall");
+  $p.find(".vxwclb").removeClass("vxwcsh").css("height", "");
+  $p.find(".vxwclbtxt").removeClass("vxwcsf vxwcsl vxwcsh vxwcsm").css("font-size", "").css("line-height", "").css("height", "").css("margin", "");
+  $p.find(".vxwclbsub").removeClass("vxwcsf vxwcsl vxwcsh vxwcsm").css("font-size", "").css("line-height", "").css("height", "").css("margin", "");
+
+   active(); vx.pi=null;
+   if (vx.atag && pgi>=vx.ai && !vx.atid) { console.log("Ad "+pgi); wall.prepareAd(vx.atag);
+     vx.atid = window.setTimeout(function(){vx.atid=null;},60000);
+     window.setTimeout(function(){vx.pi=null;},5000);
+   }
+}
+
+/* Accept query args and fragment identifier syntax */
+function getUrlVars() {
+  var opt =  window.location.href.split(/[\&\?\#]/);
+  for(var i = 1; i < opt.length; i++) {
+    kv = opt[i].split('=');
+    console.log("arg: " + kv[0] + " = " + unescape(kv[1]));
+    vx[kv[0]] = unescape(kv[1]);
+  }
+}
+
+$(function() {
+  getUrlVars();
+  var pl=vx.playlist,spl=vx.splaylist;
+  var pratio, pq="";
+  var m2a = {"www.chicagotribune.com":"tronc-app", "www.courant.com":"courant-app", "www.baltimoresun.com":"baltsun-app" };
+  var acc =  m2a[vx.market];
+  if (vx.iu) { vx.atag = "https://pubads.g.doubleclick.net/gampad/ads?sz=3x3&iu="+vx.iu+"&pos=pre&cust_params=pos%3Dpre&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&url=[referrer_url]&description_url=[description_url]&correlator=[timestamp]"; }
+
+  VuemixSDK.Wall.pagePrototypes["3x2_top"] = {
+    videoWallMode: { v: 20, a: 2, c: 3, r: 2, w: 512, h: 288 },
+    videoTileSourceHeightBase: 216,
+    videoWallRect: { x: 0, y: 0, w: 1, h: 2 }
+  }
+
+  VuemixSDK.config({
+    serverAddress: acc + ".vuemix.com",
+    groupPageSize: 32,
+    scrubbing: VuemixSDK.chooseOption({ ua:[ /os 10_/i ], pos:0 }, null),
+    needTouch: VuemixSDK.chooseOption({ ua:[ /os 10_/i ], pos:false }, null),
+  });
+
+  /* Configures steppings for when wall dynamically resizes on browser resize */
+  var resizeSettings = {
+    scaleMax: 9.9, scaleMin: 0.01, scaleStep: 0.01,
+    xPadding: 0, yPadding: 2,
+    xAlignment: "center", yAlignment: "top"
+  };
+
+  function createWall(ly) {
+     var ratio = window.innerWidth / window.innerHeight;
+     var use_auto = /^auto/.test(ly);
+     var uplay = pl;
+     if (pratio && (pq == vx.q) && (!use_auto || (ratio < 1.0 && pratio < 1.0) || (ratio >= 1.0 && pratio >= 1.0))) { return; }
+     pratio = ratio; pq=vx.q;
+     if (use_auto && ratio < 1.0) { ly += "_p"; } 
+     if (sw) { sw.close(); }
+     if (spl && vx.q.length > 0) { uplay = spl; }
+     var queryPath = "signed:"+"content/search.json?cat_nm=" + uplay + "&tname=" + ly + "&account_id=tronc-app&horder=id,client_secret,expire&expire=1531371729.0&id=shared-v%2BcqTz12zOnAM4ygsdIFzMvgThY%3D&hash=VS79lUxs6Y2UvNArkRJdh9mvSLs%3D&q=" + vx.q;
+     var div = document.getElementById('my_wall'); div.innerHTML = '';
+     sw = new VuemixSDK.SimpleWall(
+        "my_wall", 512, 288, queryPath,
+         resizeSettings, false, null, null, onTap, onDoubleTap, onPageChange,
+         null, null, { nextPrevPageButtons:true, freezeOnInit:false, onAPIFail:function(wall, state, error) {
+            div.innerHTML = '<p style="padding:20px; font-size:18px; "> <span style="color:#00;"> No videos found for </span><span style="color:#999; font-style:italic"> "' + vx.q + '"</span></p>';
+         } });
+  }
+  createWall(vx.layout);
+
+  $(window).resize(function() {
+    createWall(vx.layout);
+  });
+
+  window.addEventListener("message", function(e) {
+   cmd=e.data.split("#");
+   if (cmd[0] == "search") {
+     vx.q = cmd[1];
+     if (String.prototype.trim) { vx.q=vx.q.trim(); }
+     createWall(vx.layout);
+   }
+  }, false);
+
+  active();
+  console.log("REF[" + document.referrer + "]");
+});
+</script>
+
+<style>
+.vxwtouchprompt{background:url(http://d3ik2vfsvyg6fu.cloudfront.net/images/Touch_to_Play.svg) center no-repeat rgba(200,200,200,.5);background-size:25%}
+.vxwplayerviewmask{background-color:#FFF}
+.vxwc{border:5px solid transparent}
+.vxwc[vxwcfocus]{border-color:#0184e4}
+
+  .vxwpp_h {
+    background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMjU2IiB2aWV3Qm94PSIxNDQuMTczIDEwMy42NzMgMTYwIDI1NiI+PHJlY3QgeD0iMTQ0LjE3MyIgeT0iMTAzLjY3MyIgd2lkdGg9IjE2MCIgaGVpZ2h0PSIyNTYiIGZpbGwtb3BhY2l0eT0iMC4yIi8+PHBhdGggZD0iTTE1OS41MzIgMjMxLjkyM2MwLTQuMDQ5IDEuNTQ2LTguMDk4IDQuNjMyLTExLjE4NWw5Ny4xNDMtOTcuMTQyYzYuMTgtNi4xOCAxNi4xOTktNi4xOCAyMi4zNzYgMCA2LjE3NyA2LjE3NiA2LjE3NyAxNi4xOTMgMCAyMi4zNzNsLTg1Ljk1OCA4NS45NTMgODUuOTU1IDg1Ljk1M2M2LjE3NyA2LjE4IDYuMTc3IDE2LjE5NSAwIDIyLjM3MiAtNi4xNzcgNi4xODItMTYuMTk2IDYuMTgyLTIyLjM3NiAwbC05Ny4xNDMtOTcuMTQxQzE2MS4wNzUgMjQwLjAxOSAxNTkuNTMyIDIzNS45NyAxNTkuNTMyIDIzMS45MjN6IiBzdHlsZT0iZmlsbDojRkZGO3N0cm9rZS13aWR0aDo4O3N0cm9rZTojODA4MDgwIi8+PC9zdmc+") no-repeat center;
+    background-size: 100%;
+    width: 4%;
+    height: 100%;
+    left: 1%;
+   top: 0
+  }
+
+  .vxwnp_h {
+    background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMjU2IiB2aWV3Qm94PSIxNDQuMTczIDEwMy42NzMgMTYwIDI1NiI+PHJlY3QgeD0iMTQ0LjE3MyIgeT0iMTAzLjY3MyIgd2lkdGg9IjE2MCIgaGVpZ2h0PSIyNTYiIGZpbGwtb3BhY2l0eT0iMC4yIi8+PHBhdGggZD0iTTI4OC4zMTUgMjMxLjkyM2MwIDQuMDQ5LTEuNTQ2IDguMDk4LTQuNjMyIDExLjE4NWwtOTcuMTQzIDk3LjE0MmMtNi4xOCA2LjE4LTE2LjE5OSA2LjE4LTIyLjM3NiAwIC02LjE3Ny02LjE3Ni02LjE3Ny0xNi4xOTMgMC0yMi4zNzNsODUuOTU4LTg1Ljk1MyAtODUuOTU1LTg1Ljk1M2MtNi4xNzctNi4xOC02LjE3Ny0xNi4xOTUgMC0yMi4zNzIgNi4xNzctNi4xODIgMTYuMTk2LTYuMTgyIDIyLjM3NiAwbDk3LjE0MyA5Ny4xNDFDMjg2Ljc3MiAyMjMuODI4IDI4OC4zMTUgMjI3Ljg3NiAyODguMzE1IDIzMS45MjN6IiBzdHlsZT0iZmlsbDojRkZGO3N0cm9rZS13aWR0aDo4O3N0cm9rZTojODA4MDgwIi8+PC9zdmc+") no-repeat center;
+    background-size: 100%;
+    width: 4%;
+    height: 100%;
+    right: 1%;
+    top: 0
+  }
+
+.vxwclb {
+  position:absolute;
+  width:100%;
+  left:0;
+  bottom:0;
+  padding:0px 4px;
+  background-color:rgba(0,0,0,0.5);
+  height:58px;
+}
+
+.vxwclbimg {
+  display:none;
+}
+
+.vxwclbtxt {
+  color:#fff;
+  overflow:hidden;
+  position:absolute;
+  margin:2px 4px 0 0px;
+  left:0;
+  right:0;
+  top:15%;
+  padding:0 6px;
+  text-overflow:ellipsis;
+  /* white-space:nowrap; */
+  font-family:Georgia,'Droid Serif',serif;
+  letter-spacing: .5px;
+  height:46px;
+  line-height:22px;
+  font-size:18px;
+}
+
+.vxwclbsub {
+  color:#999;
+  overflow:hidden;
+  position:absolute;
+  margin:0 4px 0 4px;
+  height:18px;
+  left:0;
+  right:0;
+  top:2%;
+  padding:0 6px;
+  font-family:Arial,sans-serif;
+  line-height:14px;
+  font-size:10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+@media (min-width:572px) { #my_wall_vxwpp { left:30px !important; width:40px !important; } #my_wall_vxwnp { right:30px !important; width:40px !important; } }
+@media (min-width:572px) {
+  .vxwclb{height:64px} .vxwclbtxt{color:#fff;height:64px;line-height:24px;font-size:22px;top:20%;} .vxwclbsub{color:#999;height:16px;line-height:14px;font-size:10px;top:5%;}
+}
+</style>
+</head>
+
+<body style="width:100%;height:100%;margin:0;padding:0">
+
+<div id="my_wall" style="width:100%; height:100%"><div style="position: relative; overflow: hidden; width: 711.68px; height: 400.32px; left: 4.16px; top: 1px;" class="vxwany vxwfx vxwport" vxwrx="2.9928057553956604" vxwry="0.7194244604316546" vxwrw="512" vxwrh="288"><div style="position: absolute; overflow: hidden; z-index: 1; left: -711.68px; top: 0px; width: 2135.04px; height: 400.32px;" class="vxwany vxwfx vxwbase" vxwrx="-512" vxwry="0" vxwrw="1536" vxwrh="288"><div style="position: absolute; overflow: hidden; z-index: 1; left: 711.68px; top: 0px; width: 711.68px; height: 400.32px;" class="vxwany vxwfx vxwplayerviewbase" vxwrx="512" vxwry="0" vxwrw="512" vxwrh="288"><div style="position:absolute;overflow:hidden;left:0;top:0;width:100%;height:100%" class="vxwany vxbeacons"></div><div style="position: absolute; overflow: hidden; left: 0%; top: 0%; width: 100%; height: 100%;" class="vxwany vxwplayerview" id="vxwplayerview_1"><video class="vxwany vxh5playerv" style="position: absolute; left: 0px; top: 0px; width: 100%; height: 100%; object-fit: fill; display: none;" playsinline="" muted="muted" src=""></video></div></div><div style="position: absolute; overflow: hidden; z-index: 1; left: 0px; top: 0px; width: 711.68px; height: 400.32px;" class="vxwany vxwfx vxwpane_left" vxwrx="0" vxwry="0" vxwrw="512" vxwrh="288"></div><div style="position: absolute; overflow: hidden; z-index: 1; left: 711.68px; top: 0px; width: 711.68px; height: 400.32px;" class="vxwany vxwfx vxwpane_center" vxwrx="512" vxwry="0" vxwrw="512" vxwrh="288"><div class="vxwany vxwp vxwp_2x2_full" style="width:100%;height:100%"><div class="vxwany vxwplayerviewmask" style="position:absolute;left:0%;top:0%;width:0.1953125%;height:100%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:49.8046875%;top:0%;width:0.390625%;height:100%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:99.8046875%;top:0%;width:0.1953125%;height:100%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:50.1953125%;top:0%;width:49.609375%;height:0.3472222222222222%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:50.1953125%;top:49.65277777777778%;width:49.609375%;height:0.694444444444442%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:50.1953125%;top:99.65277777777779%;width:49.609375%;height:0.347222222222221%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:0.1953125%;top:0%;width:49.609375%;height:0.3472222222222222%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:0.1953125%;top:49.65277777777778%;width:49.609375%;height:0.694444444444442%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:0.1953125%;top:99.65277777777779%;width:49.609375%;height:0.347222222222221%"></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 1.39px; top: 1.39px; width: 353.06px; height: 197.38px;" vxwrx="1" vxwry="1" vxwrw="254" vxwrh="142" vxwcid="0:3767-2017-09-04-59adbed707572d08ee3b452b" vxwrr="1" vxwsc="1" class="vxwany vxwfx vxwcv"><img src="embed_data/3767-2017-09-04-59adbed707572d08ee3b452b.jpg" class="vxwany vxwcvimg" style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; display: block;"></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 1.39px; top: 1.39px; width: 353.06px; height: 197.38px;" vxwrx="1" vxwry="1" vxwrw="254" vxwrh="142" vxwcid="0:3767-2017-09-04-59adbed707572d08ee3b452b" vxwrr="1" vxwsc="1.3900000000000001" class="vxwany vxwfx vxwc vxwc_vidGeneric" vxwcnoemp=""><div class="vxwany vxwclb vxwclb_vidGeneric vxwclbvl vxwcsp" style="padding: 0px 5.56px; display: block;"><div class="vxwany vxwclbimg vxwclbimg_vidGeneric vxwcsw vxwcsh vxwcsp" style="width: 0px; height: 0px; padding: 0px;"></div><div class="vxwany vxwclbtxt vxwclbtxt_vidGeneric">Halas Hall Pass: Bears injuries heading into season opener vs. Falcons</div><div class="vxwany vxwclbsub vxwclbsub_vidGeneric">Monday</div></div><div class="vxwany vxwcftr" style="position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none"></div></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 357.23px; top: 1.39px; width: 353.06px; height: 197.38px;" vxwrx="257" vxwry="1" vxwrw="254" vxwrh="142" vxwcid="1:2379-2017-09-01-59a8fe71aa2f04057e3c5bd9" vxwrr="1" vxwsc="1" class="vxwany vxwfx vxwcv"><img src="embed_data/2379-2017-09-01-59a8fe71aa2f04057e3c5bd9.jpg" class="vxwany vxwcvimg" style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; display: block;"></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 357.23px; top: 1.39px; width: 353.06px; height: 197.38px;" vxwrx="257" vxwry="1" vxwrw="254" vxwrh="142" vxwcid="1:2379-2017-09-01-59a8fe71aa2f04057e3c5bd9" vxwrr="1" vxwsc="1.3900000000000001" class="vxwany vxwfx vxwc vxwc_vidGeneric" vxwcnoemp=""><div class="vxwany vxwclb vxwclb_vidGeneric vxwclbvl vxwcsp" style="padding: 0px 5.56px; display: block;"><div class="vxwany vxwclbimg vxwclbimg_vidGeneric vxwcsw vxwcsh vxwcsp" style="width: 0px; height: 0px; padding: 0px;"></div><div class="vxwany vxwclbtxt vxwclbtxt_vidGeneric">Dan Wiederer, Rich Campbell on Bears' 25-0 preseason loss to Browns</div><div class="vxwany vxwclbsub vxwclbsub_vidGeneric">Friday</div></div><div class="vxwany vxwcftr" style="position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none"></div></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 1.39px; top: 201.55px; width: 353.06px; height: 197.38px;" vxwrx="1" vxwry="145" vxwrw="254" vxwrh="142" vxwcid="2:299-2017-08-28-59a428ed22e5361e590592df" vxwrr="1" vxwsc="1" class="vxwany vxwfx vxwcv"><img src="embed_data/299-2017-08-28-59a428ed22e5361e590592df.jpg" class="vxwany vxwcvimg" style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; display: block;"></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 1.39px; top: 201.55px; width: 353.06px; height: 197.38px;" vxwrx="1" vxwry="145" vxwrw="254" vxwrh="142" vxwcid="2:299-2017-08-28-59a428ed22e5361e590592df" vxwrr="1" vxwsc="1.3900000000000001" class="vxwany vxwfx vxwc vxwc_vidGeneric" vxwcnoemp=""><div class="vxwany vxwclb vxwclb_vidGeneric vxwclbvl vxwcsp" style="padding: 0px 5.56px; display: block;"><div class="vxwany vxwclbimg vxwclbimg_vidGeneric vxwcsw vxwcsh vxwcsp" style="width: 0px; height: 0px; padding: 0px;"></div><div class="vxwany vxwclbtxt vxwclbtxt_vidGeneric">Breaking down Mike Glennon's outing in Bears' 19-7 preseason win</div><div class="vxwany vxwclbsub vxwclbsub_vidGeneric">28.08.2017</div></div><div class="vxwany vxwcftr" style="position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none"></div></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 357.23px; top: 201.55px; width: 353.06px; height: 197.38px;" vxwrx="257" vxwry="145" vxwrw="254" vxwrh="142" vxwcid="3:9659-2017-08-25-59a09de822e5361e6a059295" vxwrr="1" vxwsc="1" class="vxwany vxwfx vxwcv"><img src="embed_data/9659-2017-08-25-59a09de822e5361e6a059295.jpg" class="vxwany vxwcvimg" style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px; display: block;"></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 357.23px; top: 201.55px; width: 353.06px; height: 197.38px;" vxwrx="257" vxwry="145" vxwrw="254" vxwrh="142" vxwcid="3:9659-2017-08-25-59a09de822e5361e6a059295" vxwrr="1" vxwsc="1.3900000000000001" class="vxwany vxwfx vxwc vxwc_vidGeneric" vxwcnoemp=""><div class="vxwany vxwclb vxwclb_vidGeneric vxwclbvl vxwcsp" style="padding: 0px 5.56px; display: block;"><div class="vxwany vxwclbimg vxwclbimg_vidGeneric vxwcsw vxwcsh vxwcsp" style="width: 0px; height: 0px; padding: 0px;"></div><div class="vxwany vxwclbtxt vxwclbtxt_vidGeneric">Halas Hall Pass: Bears face big questions in preseason test vs. Titans</div><div class="vxwany vxwclbsub vxwclbsub_vidGeneric">26.08.2017</div></div><div class="vxwany vxwcftr" style="position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none"></div></div></div></div><div style="position: absolute; overflow: hidden; z-index: 1; left: 1423.36px; top: 0px; width: 711.68px; height: 400.32px;" class="vxwany vxwfx vxwpane_right" vxwrx="1024" vxwry="0" vxwrw="512" vxwrh="288"><div class="vxwany vxwp vxwp_2x2_full" style="width:100%;height:100%"><div class="vxwany vxwplayerviewmask" style="position:absolute;left:0%;top:0%;width:0.1953125%;height:100%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:49.8046875%;top:0%;width:0.390625%;height:100%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:99.8046875%;top:0%;width:0.1953125%;height:100%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:50.1953125%;top:0%;width:49.609375%;height:0.3472222222222222%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:50.1953125%;top:49.65277777777778%;width:49.609375%;height:0.694444444444442%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:50.1953125%;top:99.65277777777779%;width:49.609375%;height:0.347222222222221%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:0.1953125%;top:0%;width:49.609375%;height:0.3472222222222222%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:0.1953125%;top:49.65277777777778%;width:49.609375%;height:0.694444444444442%"></div><div class="vxwany vxwplayerviewmask" style="position:absolute;left:0.1953125%;top:99.65277777777779%;width:49.609375%;height:0.347222222222221%"></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 1.39px; top: 1.39px; width: 353.06px; height: 197.38px;" vxwrx="1" vxwry="1" vxwrw="254" vxwrh="142" vxwcid="4:8927-2017-08-24-599f304607572d08f13b42b3" vxwrr="1" vxwsc="1" class="vxwany vxwfx vxwcv"><img src="embed_data/8927-2017-08-24-599f304607572d08f13b42b3.jpg" class="vxwany vxwcvimg" style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px;"></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 1.39px; top: 1.39px; width: 353.06px; height: 197.38px;" vxwrx="1" vxwry="1" vxwrw="254" vxwrh="142" vxwcid="4:8927-2017-08-24-599f304607572d08f13b42b3" vxwrr="1" vxwsc="1.3900000000000001" class="vxwany vxwfx vxwc vxwc_vidGeneric" vxwcnoemp=""><div class="vxwany vxwclb vxwclb_vidGeneric vxwclbvl vxwcsp" style="padding: 0px 5.56px;"><div class="vxwany vxwclbimg vxwclbimg_vidGeneric vxwcsw vxwcsh vxwcsp" style="width: 0px; height: 0px; padding: 0px;"></div><div class="vxwany vxwclbtxt vxwclbtxt_vidGeneric">Halas Hall Pass: Bears quarterback situation</div><div class="vxwany vxwclbsub vxwclbsub_vidGeneric">24.08.2017</div></div><div class="vxwany vxwcftr" style="position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none"></div></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 357.23px; top: 1.39px; width: 353.06px; height: 197.38px;" vxwrx="257" vxwry="1" vxwrw="254" vxwrh="142" vxwcid="5:2634-2017-08-14T18:23:00+00:00-5991f33607572d7b86cea966" vxwrr="1" vxwsc="1" class="vxwany vxwfx vxwcv"><img src="embed_data/2634-2017-08-14T1823000000-5991f33607572d7b86cea966.jpg" class="vxwany vxwcvimg" style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px;"></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 357.23px; top: 1.39px; width: 353.06px; height: 197.38px;" vxwrx="257" vxwry="1" vxwrw="254" vxwrh="142" vxwcid="5:2634-2017-08-14T18:23:00+00:00-5991f33607572d7b86cea966" vxwrr="1" vxwsc="1.3900000000000001" class="vxwany vxwfx vxwc vxwc_vidGeneric" vxwcnoemp=""><div class="vxwany vxwclb vxwclb_vidGeneric vxwclbvl vxwcsp" style="padding: 0px 5.56px;"><div class="vxwany vxwclbimg vxwclbimg_vidGeneric vxwcsw vxwcsh vxwcsp" style="width: 0px; height: 0px; padding: 0px;"></div><div class="vxwany vxwclbtxt vxwclbtxt_vidGeneric">New competition for Bears at the kicker position</div><div class="vxwany vxwclbsub vxwclbsub_vidGeneric">14.08.2017</div></div><div class="vxwany vxwcftr" style="position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none"></div></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 1.39px; top: 201.55px; width: 353.06px; height: 197.38px;" vxwrx="1" vxwry="145" vxwrw="254" vxwrh="142" vxwcid="6:9453-2017-08-13T20:08:00+00:00-5990b6cdaa2f0419dc863502" vxwrr="1" vxwsc="1" class="vxwany vxwfx vxwcv"><img src="embed_data/9453-2017-08-13T2008000000-5990b6cdaa2f0419dc863502.jpg" class="vxwany vxwcvimg" style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px;"></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 1.39px; top: 201.55px; width: 353.06px; height: 197.38px;" vxwrx="1" vxwry="145" vxwrw="254" vxwrh="142" vxwcid="6:9453-2017-08-13T20:08:00+00:00-5990b6cdaa2f0419dc863502" vxwrr="1" vxwsc="1.3900000000000001" class="vxwany vxwfx vxwc vxwc_vidGeneric" vxwcnoemp=""><div class="vxwany vxwclb vxwclb_vidGeneric vxwclbvl vxwcsp" style="padding: 0px 5.56px;"><div class="vxwany vxwclbimg vxwclbimg_vidGeneric vxwcsw vxwcsh vxwcsp" style="width: 0px; height: 0px; padding: 0px;"></div><div class="vxwany vxwclbtxt vxwclbtxt_vidGeneric">Brad Biggs, Rich Campbell on Mike Glennon's road ahead</div><div class="vxwany vxwclbsub vxwclbsub_vidGeneric">13.08.2017</div></div><div class="vxwany vxwcftr" style="position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none"></div></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 357.23px; top: 201.55px; width: 353.06px; height: 197.38px;" vxwrx="257" vxwry="145" vxwrw="254" vxwrh="142" vxwcid="7:498-2017-08-11T04:45:00+00:00-598d40dfaa2f04170ad8ebb6" vxwrr="1" vxwsc="1" class="vxwany vxwfx vxwcv"><img src="embed_data/498-2017-08-11T0445000000-598d40dfaa2f04170ad8ebb6.jpg" class="vxwany vxwcvimg" style="position: absolute; width: 100%; height: 100%; top: 0px; left: 0px;"></div><div style="overflow: hidden; position: absolute; margin: 0px; padding: 0px; box-sizing: border-box; z-index: 0; left: 357.23px; top: 201.55px; width: 353.06px; height: 197.38px;" vxwrx="257" vxwry="145" vxwrw="254" vxwrh="142" vxwcid="7:498-2017-08-11T04:45:00+00:00-598d40dfaa2f04170ad8ebb6" vxwrr="1" vxwsc="1.3900000000000001" class="vxwany vxwfx vxwc vxwc_vidGeneric" vxwcnoemp=""><div class="vxwany vxwclb vxwclb_vidGeneric vxwclbvl vxwcsp" style="padding: 0px 5.56px;"><div class="vxwany vxwclbimg vxwclbimg_vidGeneric vxwcsw vxwcsh vxwcsp" style="width: 0px; height: 0px; padding: 0px;"></div><div class="vxwany vxwclbtxt vxwclbtxt_vidGeneric">Brad Biggs, Rich Campbell on Mitch Trubisky and Bears' 24-17 preseason loss</div><div class="vxwany vxwclbsub vxwclbsub_vidGeneric">11.08.2017</div></div><div class="vxwany vxwcftr" style="position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none"></div></div></div></div></div><div style="position: absolute; z-index: 2; display: none;" class="vxwany vxwpp_h" id="my_wall_vxwpp"></div><div style="position: absolute; z-index: 2; display: block;" class="vxwany vxwnp_h" id="my_wall_vxwnp"></div></div></div>
+
+
+
+
+</body></html>
